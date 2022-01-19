@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: launchpad
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: launchpad-gitops-frontend
+  namespace: launchpad
+  labels:
+    app.kubernetes.io/name: launchpad-gitops
+    app.kubernetes.io/component: launchpad-gitops-frontend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: launchpad-gitops
+      app.kubernetes.io/component: launchpad-gitops-frontend
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: launchpad-gitops
+        app.kubernetes.io/component: launchpad-gitops-frontend
+    spec:
+      containers:
+      - name: launchpad
+        image: paulofrazao/snyk-prod:v1
+        #image: paulofrazao/snyk-prod:v2
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+        env:
+        - name: GET_HOSTS_FROM
+          value: dns
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: launchpad-gitops-frontend
+  namespace: launchpad
+  labels:
+    app.kubernetes.io/name: launchpad-gitops
+    app.kubernetes.io/component: launchpad-gitops-frontend
+spec:
+  # if your cluster supports it, uncomment the following to automatically create
+  # an external load-balanced IP for the git-ops-colour-frontend service.
+  # type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app.kubernetes.io/name: launchpad-gitops
+    app.kubernetes.io/component: launchpad-gitops-frontend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: launchpad-gitops-frontend
+  namespace: launchpad
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - launchpad.geshi.ca
+    secretName: launchpad-geshi-ca-crt
+  rules:
+  - host: launchpad.geshi.ca
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: launchpad-gitops-frontend
+            port:
+              number: 80
