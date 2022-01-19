@@ -26,7 +26,7 @@ spec:
       containers:
       - name: launchpad
         image: paulofrazao/snyk-prod:v1
-        #image: paulofrazao/snyk-prod:v2
+        #image: paulofrazao/snyk-prod:v222
         resources:
           requests:
             cpu: 100m
